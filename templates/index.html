@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Sentiment Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #080810;
+      --card: #0d0d1a;
+      --border: rgba(0,212,255,0.2);
+      --blue: #00d4ff;
+      --green: #00ff41;
+      --pink: #ff006e;
+      --gold: #ffd700;
+      --purple: #bc13fe;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg);
+      color: #e0e0e0;
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    /* BG grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper { position: relative; z-index: 1; width: 100%; max-width: 720px; }
+
+    h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.6rem, 5vw, 2.6rem);
+      font-weight: 900;
+      text-align: center;
+      color: #fff;
+      text-shadow: 0 0 30px var(--blue), 0 0 60px rgba(0,212,255,0.3);
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--blue);
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 40px;
+      text-transform: uppercase;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--blue), var(--purple), var(--pink));
+    }
+
+    textarea {
+      width: 100%;
+      background: rgba(0,212,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.95rem;
+      padding: 16px;
+      resize: vertical;
+      min-height: 140px;
+      outline: none;
+      transition: border-color 0.3s;
+      line-height: 1.6;
+    }
+
+    textarea:focus { border-color: var(--blue); box-shadow: 0 0 20px rgba(0,212,255,0.1); }
+    textarea::placeholder { color: rgba(255,255,255,0.2); }
+
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Orbitron', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,212,255,0.3); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* RESULTS */
+    #results { display: none; }
+
+    .result-hero {
+      text-align: center;
+      padding: 24px 0 16px;
+    }
+
+    .result-emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
+
+    .result-label {
+      font-family: 'Orbitron', monospace;
+      font-size: 2rem;
+      font-weight: 900;
+      transition: color 0.5s;
+    }
+
+    .result-emotion {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 6px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .metric {
+      background: rgba(0,212,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Bar */
+    .bar-section { margin-top: 20px; }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 6px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .bar-bg {
+      height: 10px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      width: 0;
+      transition: width 1s ease-out;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer { to { left: 100%; } }
+
+    .info-row {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .info-item { text-align: center; }
+    .info-num {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.4rem;
+      color: var(--gold);
+    }
+    .info-lbl {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 4px;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: none;
+      width: 28px; height: 28px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.2);
+    }
+
+    .footer a { color: var(--blue); text-decoration: none; }
+
+    /* fade in */
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(20px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeUp 0.5s ease both; }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <h1>⚡ SENTIMENT AI</h1>
+  <p class="subtitle">Powered by NLP · Built by PrinceKChaudhari</p>
+
+  <div class="card">
+    <textarea id="input-text" placeholder="Type or paste any text here...&#10;&#10;e.g. 'I love building AI projects, it feels amazing!'"></textarea>
+    <button class="btn" id="analyze-btn" onclick="analyze()">🔍 ANALYZE</button>
+  </div>
+
+  <div class="card fade-in" id="results">
+    <div class="result-hero">
+      <span class="result-emoji" id="res-emoji">😐</span>
+      <div class="result-label" id="res-label">Neutral</div>
+      <div class="result-emotion" id="res-emotion">Emotion: Calm 😌</div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Polarity Score</div>
+        <div class="metric-value" id="res-polarity">0.000</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Subjectivity</div>
+        <div class="metric-value" id="res-subjectivity">0.000</div>
+      </div>
+    </div>
+
+    <div class="bar-section">
+      <div class="bar-label"><span>😔 Negative</span><span>Sentiment Meter</span><span>Positive 😊</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="polarity-bar" style="background: linear-gradient(90deg,#ff006e,#00d4ff);"></div></div>
+
+      <div class="bar-label"><span>Objective</span><span>Subjectivity Meter</span><span>Subjective</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="subjectivity-bar" style="background: linear-gradient(90deg,#00d4ff,#bc13fe);"></div></div>
+    </div>
+
+    <div class="info-row">
+      <div class="info-item">
+        <div class="info-num" id="res-words">0</div>
+        <div class="info-lbl">Words</div>
+      </div>
+      <div class="info-item">
+        <div class="info-num" id="res-sentences">0</div>
+        <div class="info-lbl">Sentences</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Made with 🤍 by <a href="https://github.com/PrinceKChaudhari">PrinceKChaudhari</a> · AI Sentiment Analyzer v1.0
+  </div>
+</div>
+
+<script>
+async function analyze() {
+  const text = document.getElementById('input-text').value.trim();
+  if (!text) { alert('Please enter some text first!'); return; }
+
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analyzing...';
+
+  try {
+    const res = await fetch('/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+
+    // Show results
+    document.getElementById('results').style.display = 'block';
+
+    document.getElementById('res-emoji').textContent = data.emoji;
+    document.getElementById('res-label').textContent = data.label;
+    document.getElementById('res-label').style.color = data.color;
+    document.getElementById('res-label').style.textShadow = `0 0 20px ${data.color}`;
+    document.getElementById('res-emotion').textContent = `Emotion: ${data.emotion}`;
+    document.getElementById('res-polarity').textContent = data.polarity;
+    document.getElementById('res-subjectivity').textContent = data.subjectivity;
+    document.getElementById('res-words').textContent = data.word_count;
+    document.getElementById('res-sentences').textContent = data.sentence_count;
+
+    // Animate bars
+    setTimeout(() => {
+      document.getElementById('polarity-bar').style.width = data.polarity_pct + '%';
+      document.getElementById('subjectivity-bar').style.width = data.subjectivity_pct + '%';
+    }, 100);
+
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+
+  } catch(e) {
+    alert('Error analyzing text. Make sure Flask server is running!');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔍 ANALYZE';
+}
+
+// Allow Enter + Ctrl to submit
+document.getElementById('input-text').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.ctrlKey) analyze();
+});
+</script>
+</body>
+</html>
